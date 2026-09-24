@@ -2,3 +2,4 @@ resources:
   - peer-authentication.yaml
   - authorization-policy.yaml
   - allow-gateway.yaml
+  - allow-apps.yaml

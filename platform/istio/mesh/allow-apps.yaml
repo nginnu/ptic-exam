@@ -1,0 +1,9 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-apps
+  namespace: apps
+spec:
+  action: ALLOW
+  rules:
+    - {}
