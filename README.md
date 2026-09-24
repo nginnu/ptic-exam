@@ -75,7 +75,7 @@ Renders every environment from a fresh clone. It needs `kustomize` and nothing e
 - Only production was installed and validated end to end. `dev` and `staging` are proven by `make build`.
 - `metrics-server` runs with `--kubelet-insecure-tls`, which kind requires. On real hardware, enable kubelet certificate rotation and drop the flag.
 - hostPath has no snapshots and no replication. The recovery path is the backup, and the restore is what needs testing.
-- The object store and the database sit outside the mesh, so their traffic is not mTLS yet.
+- The applications run in the mesh. The database and the object store do not, so their traffic is not mTLS.
 
 ## Design document
 
