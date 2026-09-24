@@ -144,7 +144,7 @@
                       +-- the root application watches gitops/applications
                               |
                               +-- one Application per component
-                              +-- one Application per environment for apps/
+                              +-- one Application per environment where it differs
 ```
 
 | Decision | Why |
@@ -152,6 +152,7 @@
 | Argo CD installs once, then manages itself from Git | An upgrade is a file change, not a command run from someone's laptop |
 | Adding a component is a file in Git | Never a manual apply |
 | Adding an environment is registering its cluster and adding its overlay | A developer portal could open that pull request instead of a person |
+| Some platform components carry overlays, the rest do not | cloudflared, postgres, rustfs and routes are meant to differ per environment; everything else is meant to be identical |
 
 ## Promotion
 
