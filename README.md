@@ -26,6 +26,57 @@ GitOps repository for a bare-metal Kubernetes homelab running three environments
 | `apps/overlays/` | Per-environment overlays for `dev`, `staging` and `prod` |
 | `docs/` | Design document and build notes |
 
+## Validate without a cluster
+
+```
+make build
+```
+
+Renders every environment from a fresh clone. It needs `kustomize` and nothing else.
+
+## Install
+
+| Command | What it does |
+| --- | --- |
+| `make check-tools` | Report tools missing from this machine |
+| `make install-cluster` | Create the cluster for `ENV` |
+| `make install-argocd` | Install Argo CD and apply the root application |
+| `make validate` | Check that what is installed actually works |
+| `make delete-cluster` | Remove the cluster |
+
+`ENV` selects the environment: `dev`, `staging` or `prod`. Step by step: [docs/install.md](docs/install.md).
+
+## Validate with a cluster
+
+`make validate` checks results rather than the presence of objects. Each topic also runs on its own as `make validate-<topic>`.
+
+| Topic | What it proves |
+| --- | --- |
+| `manifests` | Every overlay builds |
+| `cluster` | Node counts, etcd members and taints match the environment's config |
+| `gitops` | Argo CD healthy, every Application synced, no Service exposed outside the cluster |
+| `storage` | An object written to the store and read back unchanged |
+| `database` | The database accepts a write; the replica follows the primary |
+| `backup` | A forced WAL switch lands a segment in the object store; a new backup completes |
+| `apps` | The API answers, reaches the database through the pooler, and each HPA reads a CPU figure |
+| `routes` | The page renders through the gateway |
+| `ingress` | Strict mTLS, access logging on, the proxy exporting metrics and writing logs |
+| `observability` | A metric, a log line and a trace emitted and read back out |
+
+## Bootstrap assumptions
+
+- The cluster exists and is reachable.
+- An age key pair for SOPS exists outside this repository, and the encrypted files here have been re-encrypted with it.
+- A Cloudflare tunnel has been created and its credentials encrypted into this repository.
+
+## Known limitations
+
+- The encrypted files here were sealed with the author's age key. Re-encrypt them with your own before installing.
+- Only production was installed and validated end to end. `dev` and `staging` are proven by `make build`.
+- `metrics-server` runs with `--kubelet-insecure-tls`, which kind requires. On real hardware, enable kubelet certificate rotation and drop the flag.
+- hostPath has no snapshots and no replication. The recovery path is the backup, and the restore is what needs testing.
+- The object store and the database sit outside the mesh, so their traffic is not mTLS yet.
+
 ## Design document
 
 See [docs/design.md](docs/design.md).
