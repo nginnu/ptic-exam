@@ -18,4 +18,13 @@ helm upgrade --install argocd argo/argo-cd \
   --values "${HERE}/../bootstrap/argocd/values.yaml" \
   --wait --timeout 10m
 
+kubectl --context "${CONTEXT}" -n "${NAMESPACE}" create secret generic in-cluster \
+  --from-literal=name=in-cluster \
+  --from-literal=server=https://kubernetes.default.svc \
+  --from-literal=config='{"tlsClientConfig":{"insecure":false}}' \
+  --dry-run=client -o yaml \
+  | kubectl --context "${CONTEXT}" label -f - --local -o yaml --dry-run=client \
+      argocd.argoproj.io/secret-type=cluster "env=${ENV}" \
+  | kubectl --context "${CONTEXT}" apply -f -
+
 kubectl --context "${CONTEXT}" apply -f "${HERE}/../gitops/root-app.yaml"

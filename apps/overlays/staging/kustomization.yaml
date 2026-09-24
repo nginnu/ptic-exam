@@ -1,0 +1,12 @@
+namespace: apps
+
+resources:
+  - ../../base
+
+patches:
+  - path: replicas.yaml
+    target:
+      kind: Deployment
+  - path: scale.yaml
+    target:
+      kind: HorizontalPodAutoscaler

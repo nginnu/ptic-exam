@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - key: env
+              operator: Exists
+  template:
+    metadata:
+      name: apps-{{.metadata.labels.env}}
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/nginnu/ptic-exam.git
+        targetRevision: main
+        path: apps/overlays/{{.metadata.labels.env}}
+      destination:
+        server: '{{.server}}'
+        namespace: apps
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
