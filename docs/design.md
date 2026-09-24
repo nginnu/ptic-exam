@@ -174,6 +174,12 @@
 | Requests per second is the better signal | It needs Prometheus Adapter or KEDA; CPU stands in until then |
 | PodDisruptionBudget and pods spread across nodes | A node loss or a rolling update does not drop capacity |
 
+### A better scaling signal
+
+- Scale by workload metrics from Redis, an MQ, or an event stream, not by CPU alone.
+- KEDA supports workload-based autoscaling and scale-to-zero.
+- Floodgate — a custom autoscaler I developed, with capacity per replica, headroom, and several scaling modes.
+
 ## Observability
 
 ```

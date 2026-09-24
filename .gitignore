@@ -7,4 +7,5 @@ kubeconfig
 *.kubeconfig
 *.decrypted.yaml
 age.key
+keys.txt
 *.agekey
