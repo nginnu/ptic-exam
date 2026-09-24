@@ -1,0 +1,12 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: allow-gateway
+  namespace: istio-system
+spec:
+  selector:
+    matchLabels:
+      gateway.networking.k8s.io/gateway-name: external
+  action: ALLOW
+  rules:
+    - {}
