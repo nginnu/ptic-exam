@@ -1,7 +1,7 @@
 ENV ?= prod
 export ENV
 
-.PHONY: help check-tools install-cluster delete-cluster install-argocd build validate validate-cluster validate-gitops
+.PHONY: help check-tools install-cluster delete-cluster install-argocd build validate validate-cluster validate-gitops validate-ingress
 
 help:
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'
@@ -29,3 +29,6 @@ validate-cluster: ## Validate node counts, etcd and taints
 
 validate-gitops: ## Validate Argo CD and its applications
 	@scripts/validate.sh gitops
+
+validate-ingress: ## Validate mesh security, metrics and access logs
+	@scripts/validate.sh ingress

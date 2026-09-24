@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: cloudflared
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - key: env
+              operator: Exists
+  template:
+    metadata:
+      name: cloudflared-{{.metadata.labels.env}}
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/nginnu/ptic-exam.git
+        targetRevision: main
+        path: platform/cloudflared/overlays/{{.metadata.labels.env}}
+      destination:
+        server: '{{.server}}'
+        namespace: cloudflared
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          limit: 5
+          backoff:
+            duration: 10s
+            maxDuration: 2m
+        syncOptions:
+          - CreateNamespace=true

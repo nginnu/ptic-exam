@@ -4,7 +4,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 . "${HERE}/validate/lib.sh"
 
-TOPICS="cluster gitops"
+TOPICS="cluster gitops ingress"
 WANTED="${1:-${TOPICS}}"
 
 for topic in ${WANTED}; do
