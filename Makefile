@@ -1,7 +1,7 @@
 ENV ?= prod
 export ENV
 
-.PHONY: help check-tools install-cluster delete-cluster install-argocd validate validate-cluster validate-gitops
+.PHONY: help check-tools install-cluster delete-cluster install-argocd build validate validate-cluster validate-gitops
 
 help:
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'
@@ -17,6 +17,9 @@ delete-cluster: ## Delete a cluster: make delete-cluster ENV=prod
 
 install-argocd: ## Install Argo CD and apply the root application
 	@scripts/install-argocd.sh
+
+build: ## Render every overlay; needs no cluster
+	@scripts/build.sh
 
 validate: ## Check that what is installed actually works
 	@scripts/validate.sh
