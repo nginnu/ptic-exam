@@ -163,3 +163,12 @@
 | In-cluster and S3-compatible | No public IP, and the data never leaves the premises |
 | RustFS rather than MinIO | Apache-2.0, after MinIO moved console features behind a commercial licence |
 | It inherits the same hostPath limits | The recovery path is the backup, not the volume |
+
+## Scaling
+
+| Decision | Why |
+| --- | --- |
+| HPA on CPU, fed by metrics-server | The signal available without installing anything else |
+| Validation checks that the HPA reads a number, not that it scales | Proving a scale-up needs a load generator and several minutes; on real hardware that is a k6 job in CI against staging |
+| Requests per second is the better signal | It needs Prometheus Adapter or KEDA; CPU stands in until then |
+| PodDisruptionBudget and pods spread across nodes | A node loss or a rolling update does not drop capacity |

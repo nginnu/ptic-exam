@@ -41,9 +41,11 @@ What exists in this repository and why. Each section reflects the current state,
 
 ## Phase 5 — Applications
 
-- [ ] Backend API
-- [ ] Frontend
-- [ ] Routes
+- [x] Backend: PostgREST exposing the database as a REST API, reaching it through pgbouncer rather than the primary directly, so the connection count does not grow with the pod count.
+- [x] Frontend: a page that reads the API, three replicas in production and one in dev.
+- [x] Routes: every entry point kept in one component, so the paths the tunnel exposes are read in a single file.
+- [x] metrics-server at sync wave -2, so the HPAs have numbers to read before the applications land.
+- [x] Validation: the API answering, the database accepting a write through the pooler, the page rendering through the gateway, and each HPA reading a CPU figure rather than `<unknown>`.
 
 ## Phase 6 — Observability
 

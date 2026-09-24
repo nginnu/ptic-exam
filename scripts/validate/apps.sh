@@ -23,6 +23,12 @@ backend_serves_rows_from_the_database() {
     -- -sf --max-time 20 http://backend/probe
 }
 
+hpa_reads_metrics() {
+  local hpa
+  hpa="$(nonempty k -n apps get hpa --no-headers)" || return 1
+  ! printf '%s\n' "${hpa}" | grep -q '<unknown>'
+}
+
 check "backend scale matches its overlay" backend_scale_matches_its_overlay
 check "backend pods spread across nodes" backend_pods_spread_across_nodes
 check "backend hpa reads cpu" backend_hpa_reads_cpu
@@ -45,3 +51,4 @@ frontend_serves_its_page() {
 
 check "frontend scale matches its overlay" frontend_scale_matches_its_overlay
 check "frontend serves its page" frontend_serves_its_page
+check "hpa reads cpu from metrics-server" hpa_reads_metrics
