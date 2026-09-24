@@ -4,18 +4,19 @@ What exists in this repository and why. Each section reflects the current state,
 
 ## Phase 0 — Foundation
 
-- [ ] Repository skeleton
-- [ ] Design document
+- [x] Repository skeleton: directory layout, `.gitignore`, `.editorconfig`, README. The layout separates `cluster/`, `gitops/`, `platform/` and `apps/` so each concern can be owned and reviewed on its own.
+- [x] Design document: goals, topology and repository layout, written before the first manifest so every later phase has a decision to build against.
 
 ## Phase 1 — Infrastructure
 
-- [ ] Cluster topology per environment
-- [ ] Install and validation commands
-- [ ] hostPath storage class
+- [x] Cluster topology per environment: `cluster/<env>.yaml`. Production runs three control planes with stacked etcd and three workers; dev and staging run one control plane and two workers.
+- [x] `Makefile` and `scripts/`: `check-tools`, `install-cluster`, `delete-cluster`, `validate`. Written alongside the cluster rather than at the end so every phase adds its own checks as it lands.
+- [x] `scripts/validate.sh`: node counts, node readiness, etcd members and the control-plane taint, all compared against the environment's own config rather than a fixed number.
 
 ## Phase 2 — GitOps
 
 - [ ] Argo CD and the root application
+- [ ] hostPath storage class
 - [ ] Environment overlays
 - [ ] Encrypted secrets
 

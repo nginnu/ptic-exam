@@ -56,3 +56,21 @@
 | Our own manifests are plain Kustomize | A reviewer reads the diff between environments without rendering anything |
 | Third-party components stay upstream Helm charts | Vendoring them turns every upgrade into a diff of thousands of lines |
 | Environments are directories, not branches | The difference between them is visible at any moment |
+
+## Cluster
+
+| Decision | Why |
+| --- | --- |
+| One cluster per environment | An outage in one environment cannot reach another |
+| Production runs three control planes | The etcd quorum survives losing a node |
+| Non-production runs one | An outage there is not critical, and it costs three fewer machines |
+| Workers separate from control planes | No workload can starve etcd or the API server |
+| Three API servers need a load balancer in front | kind ships haproxy; real hardware uses kube-vip |
+| Cluster lifecycle sits outside GitOps | In production Terraform or Cluster API owns that layer |
+| kind reproduces the topology for review | Real hardware would use kubeadm or RKE2 |
+
+| Isolation | What it buys |
+| --- | --- |
+| No shared control plane | An upgrade touches one environment at a time |
+| No shared nodes | A load test cannot slow down dev |
+| CPU and memory limits do not cover network or disk | Only separate nodes do |
