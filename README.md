@@ -25,3 +25,7 @@ GitOps repository for a bare-metal Kubernetes homelab running three environments
 | `apps/base/` | Application manifests shared by every environment |
 | `apps/overlays/` | Per-environment overlays for `dev`, `staging` and `prod` |
 | `docs/` | Design document and build notes |
+
+## Design document
+
+See [docs/design.md](docs/design.md).
