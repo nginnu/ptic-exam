@@ -69,6 +69,39 @@ Renders every environment from a fresh clone. It needs `kustomize` and nothing e
 - An age key pair for SOPS exists outside this repository, and the encrypted files here have been re-encrypted with it.
 - A Cloudflare tunnel has been created and its credentials encrypted into this repository.
 
+## Running system
+
+Every address below is served through the Cloudflare tunnel. The cluster has no public IP and no load balancer.
+
+| URL | What it is |
+| --- | --- |
+| https://ptic.nginnu.com/ | The frontend, reading the API |
+| https://argocd-ptic.nginnu.com/ | Argo CD, showing every Application and its sync state |
+| https://grafana-ptic.nginnu.com/ | Grafana, reading Prometheus, Loki and Tempo |
+| https://kiali-ptic.nginnu.com/ | Kiali, showing the mesh and its traffic |
+| https://rustfs-ptic.nginnu.com/rustfs/console/ | The object store console |
+| https://s3-ptic.nginnu.com/public/photo.jpg | An object served from the store |
+
+### The frontend, through the tunnel
+
+![The frontend](docs/images/frontend.png)
+
+### Argo CD, every Application synced from this repository
+
+![Argo CD](docs/images/argocd.png)
+
+### Kiali, showing the mesh policy in effect
+
+![Kiali](docs/images/kiali.png)
+
+### The object store, holding the backup bucket
+
+![RustFS](docs/images/rustfs.png)
+
+### The cluster: three control planes and three workers
+
+![Cluster nodes](docs/images/cluster-node.png)
+
 ## Known limitations
 
 - The encrypted files here were sealed with the author's age key. Re-encrypt them with your own before installing.
