@@ -24,9 +24,12 @@ What exists in this repository and why. Each section reflects the current state,
 
 ## Phase 3 — Networking
 
-- [ ] Gateway API and Istio
-- [ ] Mesh policy
-- [ ] cloudflared tunnel
+- [x] Gateway API CRDs at sync wave -3, installed before Istio so the gateway controller finds its types.
+- [x] Istio: `istio-base`, `istiod` and an ingress gateway. Sidecars rather than ambient, because they carry the metrics and access logs the design depends on.
+- [x] Mesh policy: `PeerAuthentication` STRICT and a default-deny `AuthorizationPolicy`, with one rule opening the gateway. Traffic between pods is mTLS or it is refused.
+- [x] `Gateway` resource on the ingress gateway, kept at `ClusterIP`, the only entry into the mesh.
+- [x] cloudflared: two replicas with a PodDisruptionBudget, tunnel credentials held encrypted. The tunnel dials out, so the cluster keeps no LoadBalancer, NodePort or public IP.
+- [x] Validation: strict mTLS, access logging on, the proxy exporting Prometheus metrics, and the proxy writing access logs.
 
 ## Phase 4 — Data
 

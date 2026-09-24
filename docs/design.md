@@ -118,3 +118,29 @@
 | The node's disk is a single point of failure | No snapshots, no replication underneath |
 | Volumes come from the `hostpath` class | Named explicitly, so adding a second class later moves nothing |
 | Backups, not volumes, are the recovery path | And the restore is what gets tested |
+
+## Network
+
+```
+  internet --> cloudflared --> gateway --> service --> pod
+                   ^                         (mTLS inside)
+                   |
+              dials out only
+```
+
+| Decision | Why |
+| --- | --- |
+| cloudflared is the only inbound path | No public IP, no load balancer, nothing dials in |
+| No Service of type LoadBalancer or NodePort anywhere | The validation script asserts it |
+| Two replicas behind a PodDisruptionBudget | A rolling update does not drop the tunnel |
+| cloudflared forwards to the Istio gateway | Routing, TLS, metrics and access logs stay in one place |
+
+## Ingress and mesh
+
+| Decision | Why |
+| --- | --- |
+| Istio serves both directions | The gateway implements the Gateway API; the mesh handles traffic between pods |
+| A second ingress controller was rejected | Extra hop, split metrics, policy written twice |
+| `PeerAuthentication: STRICT` | Traffic between workloads in the mesh is mTLS or it is refused |
+| Default-deny `AuthorizationPolicy` | Only the paths opened on purpose work |
+| Cost | One proxy per workload, one more component to upgrade |
