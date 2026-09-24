@@ -74,3 +74,47 @@
 | No shared control plane | An upgrade touches one environment at a time |
 | No shared nodes | A load test cannot slow down dev |
 | CPU and memory limits do not cover network or disk | Only separate nodes do |
+
+## GitOps flow
+
+```
+  push --> git --> argo cd --> cluster
+                      |
+                      +-- the root application watches gitops/applications
+                              |
+                              +-- one Application per component
+                              +-- one Application per environment for apps/
+```
+
+| Decision | Why |
+| --- | --- |
+| Argo CD installs once, then manages itself from Git | An upgrade is a file change, not a command run from someone's laptop |
+| Adding a component is a file in Git | Never a manual apply |
+| Adding an environment is registering its cluster and adding its overlay | A developer portal could open that pull request instead of a person |
+
+## Promotion
+
+| Decision | Why |
+| --- | --- |
+| Environments are directories on one branch | The difference between them is visible at any moment |
+| A change moves forward by editing the next environment's overlay | Usually one image tag |
+| Every environment syncs automatically | Production needs a second reviewer on the pull request |
+
+## Secrets
+
+| Decision | Why |
+| --- | --- |
+| SOPS with an age key that lives outside this repository | Argo CD decrypts at render time; nothing plaintext is ever committed |
+| Keys stay in the clear, values encrypted | A reviewer sees what a secret holds, not its value |
+| Bootstrap needs one thing by hand: the age key | The repository itself is public, so Argo CD needs no credential to read it |
+| Vault was rejected | Unsealing it needs a KMS this hardware does not have |
+| With a cloud or an HSM, External Secrets replaces SOPS | No application manifest would change |
+
+## Storage
+
+| Fact | Consequence |
+| --- | --- |
+| hostPath is a directory on one node | A pod with that volume stays Pending if its node is down |
+| The node's disk is a single point of failure | No snapshots, no replication underneath |
+| Volumes come from the `hostpath` class | Named explicitly, so adding a second class later moves nothing |
+| Backups, not volumes, are the recovery path | And the restore is what gets tested |

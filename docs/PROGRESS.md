@@ -15,10 +15,12 @@ What exists in this repository and why. Each section reflects the current state,
 
 ## Phase 2 — GitOps
 
-- [ ] Argo CD and the root application
-- [ ] hostPath storage class
-- [ ] Environment overlays
-- [ ] Encrypted secrets
+- [x] Argo CD installed from `bootstrap/` with the upstream Helm chart, then managed from this repository by its own Application. Helm rather than the plain install manifest so resource requests stay small and unused components are switched off.
+- [x] `gitops/root-app.yaml`: the one Application applied by hand. It watches `gitops/applications`, so every later component arrives by committing a file.
+- [x] hostPath storage: `local-path-provisioner` at sync wave -2, StorageClass `hostpath` on `/var/lib/ptic/volumes`. PVCs name the class rather than relying on the default.
+- [x] Base and per-environment overlays: `apps/base` shared, `apps/overlays/{dev,staging,prod}` per environment. The cluster is labelled with its environment at install time, and an ApplicationSet turns that label into the overlay it renders.
+- [x] SOPS secret encryption: an age key held outside the repository, a `.sops.yaml` path rule, and ksops installed into the repo server by an initContainer. Argo CD decrypts at render time, so no plaintext secret is committed.
+- [x] `make build`: renders every overlay without a cluster, so the repository can be checked from a fresh clone.
 
 ## Phase 3 — Networking
 

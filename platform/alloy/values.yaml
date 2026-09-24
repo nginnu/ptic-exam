@@ -1,0 +1,177 @@
+controller:
+  type: deployment
+  replicas: 1
+
+alloy:
+  extraPorts:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+      protocol: TCP
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+      protocol: TCP
+
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+  configMap:
+    content: |-
+      otelcol.receiver.otlp "default" {
+        grpc {
+          endpoint = "0.0.0.0:4317"
+        }
+        http {
+          endpoint = "0.0.0.0:4318"
+        }
+
+        output {
+          metrics = [otelcol.exporter.prometheus.default.input]
+          logs    = [otelcol.exporter.loki.default.input]
+          traces  = [otelcol.processor.filter.drop_healthz.input]
+        }
+      }
+
+      otelcol.processor.filter "drop_healthz" {
+        error_mode = "ignore"
+
+        traces {
+          span = [
+            "attributes[\"http.route\"] == \"/healthz\"",
+            "attributes[\"http.target\"] == \"/healthz\"",
+            "attributes[\"url.path\"] == \"/healthz\"",
+          ]
+        }
+
+        output {
+          traces = [otelcol.exporter.otlphttp.tempo.input]
+        }
+      }
+
+      otelcol.exporter.loki "default" {
+        forward_to = [loki.write.default.receiver]
+      }
+
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+        }
+      }
+
+      otelcol.exporter.otlphttp "tempo" {
+        client {
+          endpoint = "http://tempo.observability.svc.cluster.local:4318"
+          tls {
+            insecure = true
+          }
+        }
+      }
+
+      otelcol.exporter.prometheus "default" {
+        forward_to = [prometheus.remote_write.default.receiver]
+        add_metric_suffixes = true
+        resource_to_telemetry_conversion = true
+      }
+
+      prometheus.remote_write "default" {
+        endpoint {
+          url = "http://prometheus-server.observability.svc.cluster.local:80/api/v1/write"
+        }
+      }
+
+      discovery.kubernetes "meshed_pods" {
+        role = "pod"
+
+        namespaces {
+          names = ["apps"]
+        }
+
+        selectors {
+          role  = "pod"
+          label = "security.istio.io/tlsMode=istio"
+          field = "status.phase=Running"
+        }
+      }
+
+      discovery.relabel "istio_sidecars" {
+        targets = discovery.kubernetes.meshed_pods.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          regex         = "istio-proxy"
+          action        = "keep"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_ip"]
+          regex         = "(.+)"
+          replacement   = "$1:15020"
+          target_label  = "__address__"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_namespace"]
+          target_label  = "namespace"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+      }
+
+      prometheus.scrape "istio_sidecars" {
+        targets    = discovery.relabel.istio_sidecars.output
+        forward_to = [prometheus.remote_write.default.receiver]
+
+        job_name     = "istio-proxy"
+        metrics_path = "/stats/prometheus"
+
+        scrape_interval = "15s"
+      }
+
+      discovery.kubernetes "istiod" {
+        role = "pod"
+
+        namespaces {
+          names = ["istio-system"]
+        }
+
+        selectors {
+          role  = "pod"
+          label = "app.kubernetes.io/name=istiod"
+          field = "status.phase=Running"
+        }
+      }
+
+      discovery.relabel "istiod" {
+        targets = discovery.kubernetes.istiod.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_port_name"]
+          regex         = "http-monitoring"
+          action        = "keep"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_namespace"]
+          target_label  = "namespace"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+      }
+
+      prometheus.scrape "istiod" {
+        targets    = discovery.relabel.istiod.output
+        forward_to = [prometheus.remote_write.default.receiver]
+
+        job_name     = "istiod"
+        metrics_path = "/metrics"
+
+        scrape_interval = "15s"
+      }

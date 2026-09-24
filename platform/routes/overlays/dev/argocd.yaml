@@ -1,0 +1,8 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: routes
+  name: argocd
+spec:
+  hostnames:
+    - argocd-dev-ptic.nginnu.com

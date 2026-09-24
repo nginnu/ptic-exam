@@ -1,0 +1,35 @@
+auth:
+  strategy: anonymous
+
+istio_namespace: istio-system
+
+deployment:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service_type: ClusterIP
+  network_policy:
+    enabled: false
+
+server:
+  web_root: /
+
+external_services:
+  istio:
+    gateway_api_classes:
+      - name: External
+        class_name: external
+  prometheus:
+    url: http://prometheus-server.observability.svc.cluster.local
+  grafana:
+    internal_url: http://grafana.observability.svc.cluster.local
+    dashboards:
+      - name: "LGTM Lab Overview"
+        variables:
+          workload: var-service
+  tracing:
+    enabled: false

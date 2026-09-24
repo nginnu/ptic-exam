@@ -1,0 +1,10 @@
+resources:
+  - ../../base
+
+patches:
+  - path: app.yaml
+  - path: argocd.yaml
+  - path: grafana.yaml
+  - path: kiali.yaml
+  - path: rustfs.yaml
+  - path: s3.yaml

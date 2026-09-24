@@ -1,0 +1,9 @@
+resources:
+  - namespace.yaml
+  - referencegrant.yaml
+  - app.yaml
+  - argocd.yaml
+  - grafana.yaml
+  - kiali.yaml
+  - rustfs.yaml
+  - s3.yaml

@@ -1,0 +1,7 @@
+resources:
+  - ../../base
+
+patches:
+  - path: statefulset.yaml
+    target:
+      kind: StatefulSet

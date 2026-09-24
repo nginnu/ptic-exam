@@ -1,0 +1,10 @@
+namespace: rustfs
+
+resources:
+  - namespace.yaml
+  - job.yaml
+  - service.yaml
+  - statefulset.yaml
+
+generators:
+  - secret-generator.yaml

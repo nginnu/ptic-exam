@@ -1,0 +1,8 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  namespace: routes
+  name: s3
+spec:
+  hostnames:
+    - s3-ptic.nginnu.com

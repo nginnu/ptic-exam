@@ -1,0 +1,7 @@
+resources:
+  - ../../base
+
+patches:
+  - path: cluster.yaml
+    target:
+      kind: Cluster

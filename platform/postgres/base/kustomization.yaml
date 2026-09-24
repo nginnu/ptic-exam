@@ -1,0 +1,11 @@
+namespace: postgres
+
+resources:
+  - namespace.yaml
+  - job.yaml
+  - cluster.yaml
+  - pooler.yaml
+  - scheduledbackup.yaml
+
+generators:
+  - secret-generator.yaml

@@ -1,0 +1,14 @@
+namespace: cloudflared
+
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - pdb.yaml
+
+generators:
+  - secret-generator.yaml
+
+configMapGenerator:
+  - name: cloudflared
+    files:
+      - config.yaml

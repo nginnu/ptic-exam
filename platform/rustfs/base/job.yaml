@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-public-bucket
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: aws
+          image: amazon/aws-cli:2.32.9
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: rustfs
+                  key: accessKey
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rustfs
+                  key: secretKey
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
+          command:
+            - sh
+            - -c
+            - |
+              E=http://rustfs:9000
+              aws --endpoint-url $E s3 mb s3://public || true
+              cat > /tmp/policy.json <<'JSON'
+              {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "s3:GetObject",
+                    "Resource": "arn:aws:s3:::public/*"
+                  }
+                ]
+              }
+              JSON
+              aws --endpoint-url $E s3api put-bucket-policy --bucket public --policy file:///tmp/policy.json
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 128Mi

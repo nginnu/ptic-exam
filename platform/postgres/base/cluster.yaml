@@ -1,0 +1,54 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres
+spec:
+  instances: 2
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.1
+  primaryUpdateStrategy: unsupervised
+  storage:
+    size: 1Gi
+    storageClass: hostpath
+  bootstrap:
+    initdb:
+      database: ptic
+      owner: ptic
+      postInitApplicationSQL:
+        - CREATE TABLE IF NOT EXISTS probe (id int primary key, note text)
+        - INSERT INTO probe VALUES (1, 'ptic-probe') ON CONFLICT (id) DO NOTHING
+
+  managed:
+    roles:
+      - name: api
+        login: true
+        ensure: present
+        inRoles:
+          - ptic
+        passwordSecret:
+          name: api-db
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://postgres-backup
+      endpointURL: http://rustfs.rustfs.svc.cluster.local:9000
+      s3Credentials:
+        accessKeyId:
+          name: postgres-backup
+          key: accessKey
+        secretAccessKey:
+          name: postgres-backup
+          key: secretKey
+      wal:
+        compression: gzip
+      data:
+        compression: gzip
+    retentionPolicy: 7d
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname

@@ -1,0 +1,16 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd
+  namespace: routes
+spec:
+  hostnames:
+    - argocd-ptic.nginnu.com
+  parentRefs:
+    - name: external
+      namespace: istio-system
+  rules:
+    - backendRefs:
+        - name: argocd-server
+          namespace: argocd
+          port: 80

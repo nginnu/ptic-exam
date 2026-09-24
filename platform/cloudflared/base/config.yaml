@@ -1,0 +1,6 @@
+tunnel: e5af5038-f4e9-4e13-97e0-42e023cf342a
+credentials-file: /etc/cloudflared/credentials/credentials.json
+metrics: 0.0.0.0:2000
+no-autoupdate: true
+ingress:
+  - service: http://external-istio.istio-system.svc.cluster.local:80
