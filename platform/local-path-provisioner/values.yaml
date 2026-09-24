@@ -1,0 +1,18 @@
+storageClass:
+  create: true
+  defaultClass: true
+  name: hostpath
+  reclaimPolicy: Retain
+  volumeBindingMode: WaitForFirstConsumer
+
+nodePathMap:
+  - node: DEFAULT_PATH_FOR_NON_LISTED_NODES
+    paths:
+      - /var/lib/ptic/volumes
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    memory: 128Mi
