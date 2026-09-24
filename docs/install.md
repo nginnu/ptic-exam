@@ -54,13 +54,13 @@ This installs Argo CD, loads the age key, registers the cluster with its environ
 ## 6. Check
 
 ```
-make build      renders every overlay; needs no cluster
+make build      renders every overlay without a cluster; needs ksops and the age key from step 2
 make validate   runs against the cluster
 ```
 
 ## Access
 
-Argo CD has no public route by design. Reach it through a port forward:
+Argo CD is reachable at the address listed in the README, through the tunnel like everything else. A port forward works too:
 
 ```
 kubectl -n argocd port-forward svc/argocd-server 8080:80

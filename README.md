@@ -6,12 +6,15 @@ GitOps repository for a bare-metal Kubernetes homelab running three environments
 
 | Component | Choice |
 | --- | --- |
+| Delivery | Argo CD, managing itself from this repository |
 | Database | CloudNativePG on hostPath |
-| Backend API | Scalable, HA deployment |
-| Frontend | Scalable, HA deployment |
-| Ingress | Istio with the Kubernetes Gateway API |
-| Object storage | In-cluster, S3-compatible |
-| Observability | Metrics, logs and traces |
+| Connection pooling | pgbouncer through a CNPG Pooler |
+| Backend API | PostgREST, scalable and HA |
+| Frontend | Static page reading the API, scalable and HA |
+| Ingress | Istio implementing the Kubernetes Gateway API |
+| Object storage | RustFS, in-cluster and S3-compatible |
+| Autoscaling | HPA on CPU, fed by metrics-server |
+| Observability | Alloy, Prometheus, Loki, Tempo, Grafana, Kiali |
 | External access | cloudflared tunnel, the only inbound path |
 
 ## Repository layout

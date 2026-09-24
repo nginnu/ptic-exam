@@ -13,30 +13,91 @@
 ## Topology
 
 ```
-                     Cloudflare
+[ Internet ]
+     |
+     v
++-----------------------------------------------------------------+
+| External ingress                                                |
+|   cloudflared tunnel, two replicas behind a PodDisruptionBudget |
+|   dials out to Cloudflare; nothing dials in                     |
++-----------------------------------------------------------------+
+     |
+     v  ClusterIP, HTTP
++-----------------------------------------------------------------+
+| Gateway                                                         |
+|   Istio ingress gateway implementing the Kubernetes Gateway API |
+|   HTTPRoute per hostname; metrics and access logs               |
++-----------------------------------------------------------------+
+     |
+     +-----------------------------+
+     v                             v
++--------------------+    +--------------------+
+| Frontend           |    | Backend API        |
+| Deployment + HPA   |    | Deployment + HPA   |
+| 3 replicas in prod |    | 3 replicas in prod |
++--------------------+    +--------------------+
+                                  |
+                                  v  mTLS inside the mesh
+                          +--------------------+
+                          | pgbouncer          |
+                          | CNPG Pooler, rw    |
+                          +--------------------+
+                                  |
+     +----------------------------+----------------------------+
+     v                                                         v
++----------------------------------+    +----------------------------------+
+| Database                         |    | Object storage                   |
+|   CloudNativePG operator         |    |   RustFS, S3-compatible          |
+|   Postgres cluster, primary and  |    |   StatefulSet, one replica       |
+|   replica on separate nodes      |<---|   holds base backups and WAL     |
+|   hostPath volumes               |    |   hostPath volume                |
++----------------------------------+    +----------------------------------+
+     |                                                         |
+     |  continuous WAL archiving and a daily scheduled backup  |
+     +---------------------------------------------------------+
+
+     every layer above emits metrics, logs and traces
                           |
-                          |  the tunnel dials out
                           v
-   +---------------------------------------------+
-   |  one cluster per environment                |
-   |                                             |
-   |   cloudflared --> gateway --> apps          |
-   |                                 |           |
-   |                                 v           |
-   |                          postgres   object  |
-   |                                      store  |
-   |                                             |
-   |   argo cd  <-- git                          |
-   +---------------------------------------------+
++-----------------------------------------------------------------+
+| Observability                                                   |
+|   Alloy, one agent per node, collects all three                 |
+|   Prometheus (metrics) . Loki (logs) . Tempo (traces)           |
+|   Grafana reads all three . Kiali reads the mesh metrics        |
++-----------------------------------------------------------------+
+
++-----------------------------------------------------------------+
+| Delivery                                                        |
+|   Argo CD reads this repository and makes the cluster match it  |
+|   it manages itself from Git, so no layer is outside GitOps     |
++-----------------------------------------------------------------+
+```
+
+### One request, end to end
+
+```
+[ Cloudflare edge ]
+      |
+      v  HTTP/2 over the tunnel
+[ cloudflared pod ]           dials out; no inbound port, no public IP
+      |
+      v  ClusterIP
+[ Istio gateway ]             HTTPRoute picks the service by hostname
+      |
+      v  mTLS
+[ frontend pod ] --> [ backend pod ] --> [ pgbouncer ] --> [ postgres primary ]
 ```
 
 | Layer | What runs it | What it does |
 | --- | --- | --- |
 | Entry | cloudflared | Dials out to Cloudflare; nothing dials in |
-| Routing | Istio with the Gateway API | Routes, metrics, access logs |
+| Gateway types | Kubernetes Gateway API CRDs | Installed first, so the gateway controller finds its types |
+| Routing | Istio implementing the Gateway API | Routes, metrics, access logs |
 | Applications | Deployment with an HPA | Scale with load |
+| Connection pooling | pgbouncer through a CNPG Pooler | The pod count does not reach the database |
 | Database | CloudNativePG | Failover, backup, WAL archiving, minor upgrades |
-| Object storage | S3-compatible, in-cluster | Backups stay on the premises |
+| Object storage | RustFS, S3-compatible, in-cluster | Backups stay on the premises |
+| Observability | Alloy, Prometheus, Loki, Tempo, Grafana | Metrics, logs and traces from one agent |
 | Delivery | Argo CD | Reads Git and makes the cluster match it |
 
 ## Repository layout
@@ -171,7 +232,6 @@
 | --- | --- |
 | HPA on CPU, fed by metrics-server | The signal available without installing anything else |
 | Validation checks that the HPA reads a number, not that it scales | Proving a scale-up needs a load generator and several minutes; on real hardware that is a k6 job in CI against staging |
-| Requests per second is the better signal | It needs Prometheus Adapter or KEDA; CPU stands in until then |
 | PodDisruptionBudget and pods spread across nodes | A node loss or a rolling update does not drop capacity |
 
 ### A better scaling signal
