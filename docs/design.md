@@ -172,3 +172,22 @@
 | Validation checks that the HPA reads a number, not that it scales | Proving a scale-up needs a load generator and several minutes; on real hardware that is a k6 job in CI against staging |
 | Requests per second is the better signal | It needs Prometheus Adapter or KEDA; CPU stands in until then |
 | PodDisruptionBudget and pods spread across nodes | A node loss or a rolling update does not drop capacity |
+
+## Observability
+
+```
+  pod ──┐
+        │
+  gateway ──> alloy ──> metrics ──> Prometheus ──┐
+              (one per          logs ──> Loki ───┼──> Grafana
+               node)            traces ─> Tempo ─┘
+```
+
+| Decision | Why |
+| --- | --- |
+| One agent per node collects metrics, logs and traces | One pipeline to run and upgrade, not three |
+| Ingress access logs take the same path as container logs | A 500 at the edge leads back to the pod that caused it |
+| The gateway starts a trace and the mesh propagates it | No application change is needed |
+| Grafana reads all three | One place to correlate a metric, a log line and a trace |
+| Kiali reads the mesh metrics | The service graph and mTLS status come from data already collected |
+| Losing this stack does not take the platform down | It watches the system; it is not in the request path |

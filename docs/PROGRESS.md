@@ -49,10 +49,11 @@ What exists in this repository and why. Each section reflects the current state,
 
 ## Phase 6 — Observability
 
-- [ ] Metrics, logs and traces
-- [ ] Dashboards
+- [x] One Alloy agent per node collects metrics, logs and traces and forwards them to Prometheus, Loki and Tempo.
+- [x] Grafana reads all three; Kiali reads the mesh metrics for the service graph.
+- [x] Validation emits a metric, a log line and a trace, then reads each one back out of its store.
 
 ## Phase 7 — Wrap-up
 
-- [ ] Install guide
-- [ ] Known limitations
+- [x] Install guide: `docs/install.md`, from an empty machine to a validated cluster.
+- [x] Known limitations recorded in the README.
