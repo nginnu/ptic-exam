@@ -37,7 +37,7 @@
 | 3 replicas in prod |    | 3 replicas in prod |
 +--------------------+    +--------------------+
                                   |
-                                  v  mTLS inside the mesh
+                                  v  TLS, CNPG certificates
                           +--------------------+
                           | pgbouncer          |
                           | CNPG Pooler, rw    |
@@ -49,7 +49,7 @@
 | Database                         |    | Object storage                   |
 |   CloudNativePG operator         |    |   RustFS, S3-compatible          |
 |   Postgres cluster, primary and  |    |   StatefulSet, one replica       |
-|   replica on separate nodes      |<---|   holds base backups and WAL     |
+|   one replica                    |--->|   holds base backups and WAL     |
 |   hostPath volumes               |    |   hostPath volume                |
 +----------------------------------+    +----------------------------------+
      |                                                         |
@@ -78,15 +78,21 @@
 ```
 [ Cloudflare edge ]
       |
-      v  HTTP/2 over the tunnel
+      v  over the tunnel
 [ cloudflared pod ]           dials out; no inbound port, no public IP
       |
       v  ClusterIP
-[ Istio gateway ]             HTTPRoute picks the service by hostname
+[ Istio gateway ]             HTTPRoute picks the backend by hostname and path
       |
-      v  mTLS
-[ frontend pod ] --> [ backend pod ] --> [ pgbouncer ] --> [ postgres primary ]
+      +-- /       --> [ frontend pod ]   serves the page
+      |                   mTLS
+      |
+      +-- /api/*  --> [ backend pod ] --> [ pgbouncer ] --> [ postgres primary ]
+                          mTLS            TLS, CNPG certificates
 ```
+
+The page fetches `/api/probe` from the browser, so that is a second request down the
+same path, not a call the frontend pod makes.
 
 | Layer | What runs it | What it does |
 | --- | --- | --- |
@@ -122,19 +128,24 @@
 
 | Decision | Why |
 | --- | --- |
-| One cluster per environment | An outage in one environment cannot reach another |
-| Production runs three control planes | The etcd quorum survives losing a node |
-| Non-production runs one | An outage there is not critical, and it costs three fewer machines |
-| Workers separate from control planes | No workload can starve etcd or the API server |
-| Three API servers need a load balancer in front | kind ships haproxy; real hardware uses kube-vip |
-| Cluster lifecycle sits outside GitOps | In production Terraform or Cluster API owns that layer |
-| kind reproduces the topology for review | Real hardware would use kubeadm or RKE2 |
+| One cluster per environment | Chosen — an outage in one environment cannot reach another |
+| Production runs three control planes | Chosen — the etcd quorum survives losing a node |
+| Non-production runs one | Chosen — an outage there is not critical, and it saves three machines |
+| Workers separate from control planes | Chosen — no workload can starve etcd or the API server |
+| Shared nodes with CPU and memory limits | Not chosen — limits cover CPU and memory, not network or disk |
+| A load balancer in front of the three API servers | Chosen — kind starts one for it |
+| Cluster lifecycle outside GitOps | Chosen — Argo CD needs a cluster before it can manage anything |
+| kind reproduces the topology | Chosen — it runs the whole topology on one machine for testing |
 
 | Isolation | What it buys |
 | --- | --- |
 | No shared control plane | An upgrade touches one environment at a time |
 | No shared nodes | A load test cannot slow down dev |
-| CPU and memory limits do not cover network or disk | Only separate nodes do |
+
+In production the layer below Kubernetes should not be kind. kube-vip fronts the
+three API servers, the nodes come from kubeadm or RKE2 depending on the project,
+and Terraform or Cluster API owns their lifecycle. Nothing above that layer
+changes.
 
 ## GitOps flow
 
@@ -154,23 +165,18 @@
 | Adding an environment is registering its cluster and adding its overlay | A developer portal could open that pull request instead of a person |
 | Some platform components carry overlays, the rest do not | cloudflared, postgres, rustfs and routes are meant to differ per environment; everything else is meant to be identical |
 
-## Promotion
-
-| Decision | Why |
-| --- | --- |
-| Environments are directories on one branch | The difference between them is visible at any moment |
-| A change moves forward by editing the next environment's overlay | Usually one image tag |
-| Every environment syncs automatically | Production needs a second reviewer on the pull request |
-
 ## Secrets
 
 | Decision | Why |
 | --- | --- |
-| SOPS with an age key that lives outside this repository | Argo CD decrypts at render time; nothing plaintext is ever committed |
-| Keys stay in the clear, values encrypted | A reviewer sees what a secret holds, not its value |
-| Bootstrap needs one thing by hand: the age key | The repository itself is public, so Argo CD needs no credential to read it |
-| Vault was rejected | Unsealing it needs a KMS this hardware does not have |
-| With a cloud or an HSM, External Secrets replaces SOPS | No application manifest would change |
+| SOPS with an age key that lives outside this repository | Chosen — Argo CD decrypts at render time, so nothing plaintext is ever committed |
+| Keys stay in the clear, values encrypted | Chosen — a reviewer sees what a secret holds, not its value |
+| The age key is the one thing bootstrap needs by hand | Chosen — the repository is public, so Argo CD needs no credential to read it |
+| Vault | Not chosen — unsealing it needs a KMS this hardware does not have |
+
+In production, where a cloud KMS or an HSM is available, External Secrets should
+replace SOPS. The Secret names stay the same, so no Deployment changes; the
+`.sops.yaml` files are replaced by `ExternalSecret` resources pointing at the store.
 
 ## Storage
 
@@ -202,22 +208,31 @@
 
 | Decision | Why |
 | --- | --- |
-| Istio serves both directions | The gateway implements the Gateway API; the mesh handles traffic between pods |
-| A second ingress controller was rejected | Extra hop, split metrics, policy written twice |
-| `PeerAuthentication: STRICT` | Traffic between workloads in the mesh is mTLS or it is refused |
-| Default-deny `AuthorizationPolicy` | Only the paths opened on purpose work |
-| Cost | One proxy per workload, one more component to upgrade |
+| Istio serves both directions | Chosen — the gateway implements the Gateway API, and the same control plane handles traffic between pods |
+| A second ingress controller | Not chosen — an extra hop, metrics split across two components, policy written twice |
+| `PeerAuthentication: STRICT` | Chosen — traffic between workloads in the mesh is mTLS or it is refused |
+| Default-deny `AuthorizationPolicy` | Chosen — only the paths opened on purpose work |
+| One sidecar per workload | The cost of the above: a proxy in every pod, and one more component to upgrade |
+
+In production the database and the object store should join the mesh as well. Here
+they run outside it, so the hop from the API to pgbouncer is encrypted by the
+certificates CloudNativePG issues rather than by the mesh, and one policy does not
+yet cover every hop.
 
 ## Data
 
 | Decision | Why |
 | --- | --- |
-| CloudNativePG runs Postgres | Failover, backup, WAL archiving and minor upgrades are fields in a custom resource |
-| Primary and replica spread across nodes | One node going down does not take both |
-| pgbouncer in front through a Pooler | The application scales without the connection count reaching the database |
-| Continuous backup and WAL archiving to the in-cluster object store | Nothing leaves the premises and no public endpoint is needed |
-| Read replicas scale by changing `spec.instances` | Writes stay on one primary |
-| CNPG exposes no scale subresource | An HPA cannot drive it; a controller or KEDA would |
+| CloudNativePG runs Postgres | Chosen — failover, backup, WAL archiving and minor upgrades are fields in a custom resource |
+| Primary and replica on separate nodes | Chosen — pod anti-affinity on the hostname key, so the scheduler prefers to keep them apart |
+| pgbouncer in front through a Pooler | Chosen — the application scales without the connection count reaching the database |
+| Continuous backup and WAL archiving to the in-cluster object store | Chosen — nothing leaves the premises and no public endpoint is needed |
+| An HPA on the database | Not chosen — CNPG exposes no scale subresource, so an HPA has nothing to drive |
+
+In production reads should have a path of their own. `spec.instances` already puts a
+replica on a second node, but the only Pooler here is `rw`, so every query lands on
+the primary; a second Pooler of type `ro` and a read-only connection string in the
+API would spread them.
 
 ## Object storage
 
@@ -231,14 +246,15 @@
 
 | Decision | Why |
 | --- | --- |
-| HPA on CPU, fed by metrics-server | The signal available without installing anything else |
-| Validation checks that the HPA reads a number, not that it scales | Proving a scale-up needs a load generator and several minutes; on real hardware that is a k6 job in CI against staging |
-| PodDisruptionBudget and pods spread across nodes | A node loss or a rolling update does not drop capacity |
+| HPA on CPU, fed by metrics-server | Chosen — the signal available without installing anything else |
+| A load generator in the validation | Not chosen — proving a scale-up takes several minutes, so validation checks that each HPA reads a CPU figure rather than `<unknown>` |
+| A PodDisruptionBudget on each application | Chosen — `minAvailable: 1`, so a drain or a rolling update cannot take every replica at once |
 
-### A better scaling signal
+In production CPU is the wrong signal for most workloads. Scale on queue depth or
+request rate instead — from Redis, a message queue or an event stream — which is
+what KEDA reads, and it can scale to zero as well. A k6 job in CI against staging
+is what proves a scale-up actually happens.
 
-- Scale by workload metrics from Redis, an MQ, or an event stream, not by CPU alone.
-- KEDA supports workload-based autoscaling and scale-to-zero.
 - Floodgate — a custom autoscaler I developed, with capacity per replica, headroom, and several scaling modes.
 
 ## Observability
@@ -260,14 +276,15 @@
 | Kiali reads the mesh metrics | The service graph and mTLS status come from data already collected |
 | Losing this stack does not take the platform down | It watches the system; it is not in the request path |
 
-## Not here
+## Out of scope
 
-The focus here is the GitOps structure and the tunnel that makes it work on bare metal. Other areas go only as deep as that needed — happy to go into any of them.
+The focus here is the GitOps structure and the tunnel that makes it work on bare
+metal. These areas were left alone on purpose — happy to go into any of them.
 
-| Area | Left out |
+| Area | Not covered |
 | --- | --- |
 | Network | CNI choice and NetworkPolicy |
-| Storage | Replicated block storage; a volume stays on the node that wrote it |
+| Storage | Replicated block storage |
 | Security | Admission policy, Pod Security Standards, image signing |
 | TLS | cert-manager |
 | Delivery | CI/CD pipeline and progressive delivery |
@@ -275,10 +292,13 @@ The focus here is the GitOps structure and the tunnel that makes it work on bare
 | Recovery | Restore drill, etcd backup, cluster upgrades |
 | Operations | Alerting and on-call routing |
 
-| Known limitation | |
+## Known limitations
+
+Everything below runs. Each line is the trade-off it was built with.
+
+| Limitation | What it means for you |
 | --- | --- |
 | The encrypted files here were sealed with the author's age key | Re-encrypt them with your own before installing |
-| Only production was installed and validated end to end | `dev` and `staging` are proven by rendering their overlays, not by running them |
-| `metrics-server` runs with `--kubelet-insecure-tls` | kind requires it; on real hardware, enable kubelet certificate rotation and drop the flag |
-| hostPath has no snapshots and no replication | The recovery path is the backup, and the restore is what needs testing |
-| The applications run in the mesh, the database and object store do not | Their traffic is not mTLS |
+| Production was installed and validated end to end; `dev` and `staging` are proven by rendering their overlays | The difference between them is a file, so rendering is what there is to check |
+| A hostPath volume is a directory on one node, with no replication and no snapshots | The recovery path is the backup, and the restore is what needs testing |
+| Backups land in the in-cluster object store, which sits on one of those volumes | Nothing leaves the premises by design; a second site or an off-cluster target is the next step |

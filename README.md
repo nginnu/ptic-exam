@@ -10,7 +10,7 @@ GitOps repository for a bare-metal Kubernetes homelab running three environments
 | Database | CloudNativePG on hostPath |
 | Connection pooling | pgbouncer through a CNPG Pooler |
 | Backend API | PostgREST, scalable and HA |
-| Frontend | Static page reading the API, scalable and HA |
+| Frontend | Static page, scalable and HA |
 | Ingress | Istio implementing the Kubernetes Gateway API |
 | Object storage | RustFS, in-cluster and S3-compatible |
 | Autoscaling | HPA on CPU, fed by metrics-server |
@@ -61,7 +61,7 @@ Renders every environment without a cluster. It needs `kustomize`, `ksops` and a
 | `storage` | An object written to the store and read back unchanged |
 | `database` | The database accepts a write; the replica follows the primary |
 | `backup` | A forced WAL switch lands a segment in the object store; a new backup completes |
-| `apps` | The API answers, reaches the database through the pooler, and each HPA reads a CPU figure |
+| `apps` | Each Deployment matches its overlay, the page is served, and each HPA reads a CPU figure |
 | `routes` | The page renders through the gateway |
 | `ingress` | Strict mTLS, access logging on, the proxy exporting metrics and writing logs |
 | `observability` | A metric, a log line and a trace emitted and read back out |
@@ -78,7 +78,7 @@ Every address below is served through the Cloudflare tunnel. The cluster has no 
 
 | URL | What it is |
 | --- | --- |
-| https://ptic.nginnu.com/ | The frontend, reading the API |
+| https://ptic.nginnu.com/ | The frontend |
 | https://argocd-ptic.nginnu.com/ | Argo CD, showing every Application and its sync state |
 | https://grafana-ptic.nginnu.com/ | Grafana, reading Prometheus, Loki and Tempo |
 | https://kiali-ptic.nginnu.com/ | Kiali, showing the mesh and its traffic |
@@ -109,7 +109,7 @@ Every address below is served through the Cloudflare tunnel. The cluster has no 
 
 | Document | What is in it |
 | --- | --- |
-| [docs/design.md](docs/design.md) | Goals, topology, repository layout, promotion, secrets, hostPath risks, the tunnel model and the observability paths |
+| [docs/design.md](docs/design.md) | Goals, topology, repository layout, secrets, hostPath risks, the tunnel model and the observability paths |
 | [docs/install.md](docs/install.md) | From an empty machine to a validated cluster, step by step |
 | [docs/PROGRESS.md](docs/PROGRESS.md) | What exists in this repository and why, phase by phase |
 

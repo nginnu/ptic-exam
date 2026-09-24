@@ -35,7 +35,7 @@ What exists in this repository and why. Each section reflects the current state,
 
 - [x] Object storage: RustFS as a StatefulSet claiming a `hostpath` volume, reached over a headless Service. S3-compatible and in-cluster, so backups never leave the premises and no public endpoint is needed.
 - [x] PostgreSQL through CloudNativePG: one instance in dev, two in staging and production, spread across nodes by anti-affinity, with pgbouncer in front through a Pooler.
-- [x] Continuous backup and WAL archiving into the object store, with a daily scheduled backup and a seven-day retention policy.
+- [x] Continuous backup and WAL archiving into the object store, with a daily scheduled backup and a retention policy per environment: one day in dev, three in staging, seven in production.
 - [x] Credentials for both are generated per install and encrypted with SOPS; ksops renders them at sync time, so the repository holds ciphertext only.
 - [x] Validation: an object written and read back, the database accepting a write, the replica following the primary, and a WAL segment landing in the object store after a forced switch.
 
@@ -45,7 +45,7 @@ What exists in this repository and why. Each section reflects the current state,
 - [x] Frontend: a page that reads the API, three replicas in production and one in dev.
 - [x] Routes: every entry point kept in one component, so the paths the tunnel exposes are read in a single file.
 - [x] metrics-server at sync wave -2, so the HPAs have numbers to read before the applications land.
-- [x] Validation: the API answering, the database accepting a write through the pooler, the page rendering through the gateway, and each HPA reading a CPU figure rather than `<unknown>`.
+- [x] Validation: the page rendering through the gateway, each Deployment matching its overlay, and each HPA reading a CPU figure rather than `<unknown>`.
 
 ## Phase 6 — Observability
 
@@ -56,7 +56,7 @@ What exists in this repository and why. Each section reflects the current state,
 ## Phase 7 — Wrap-up
 
 - [x] Install guide: `docs/install.md`, from an empty machine to a validated cluster.
-- [x] Known limitations recorded in the README.
+- [x] Known limitations recorded in `docs/design.md`.
 
 ---
 
