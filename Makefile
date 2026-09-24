@@ -1,7 +1,7 @@
 ENV ?= prod
 export ENV
 
-.PHONY: help check-tools install-cluster delete-cluster install-argocd build validate validate-manifests validate-cluster validate-gitops validate-storage validate-database validate-backup validate-apps validate-routes validate-ingress
+.PHONY: help check-tools install-cluster delete-cluster install-argocd build validate validate-manifests validate-cluster validate-gitops validate-storage validate-database validate-backup validate-apps validate-routes validate-ingress validate-observability
 
 help:
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'
@@ -50,3 +50,6 @@ validate-apps: ## Validate the api and the web page
 
 validate-routes: ## Validate the routes through the gateway
 	@scripts/validate.sh routes
+
+validate-observability: ## Validate metrics, logs and traces arrive
+	@scripts/validate.sh observability

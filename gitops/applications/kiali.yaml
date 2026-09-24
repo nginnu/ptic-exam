@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kiali
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  sources:
+    - repoURL: https://kiali.org/helm-charts
+      chart: kiali-server
+      targetRevision: 2.32.0
+      helm:
+        valueFiles:
+          - $values/platform/kiali/values.yaml
+    - repoURL: https://github.com/nginnu/ptic-exam.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: istio-system
+  ignoreDifferences:
+    - group: ""
+      kind: ConfigMap
+      name: kiali
+      jqPathExpressions:
+        - .data
+    - group: apps
+      kind: Deployment
+      name: kiali
+      jqPathExpressions:
+        - .spec.template.metadata.annotations["checksum/config"]
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
