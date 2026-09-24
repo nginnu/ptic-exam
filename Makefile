@@ -1,7 +1,7 @@
 ENV ?= prod
 export ENV
 
-.PHONY: help check-tools install-cluster delete-cluster
+.PHONY: help check-tools install-cluster delete-cluster validate validate-cluster
 
 help:
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'
@@ -14,3 +14,9 @@ install-cluster: ## Create a cluster: make install-cluster ENV=prod
 
 delete-cluster: ## Delete a cluster: make delete-cluster ENV=prod
 	@kind delete cluster --name ptic-$(ENV)-cluster
+
+validate: ## Check that what is installed actually works
+	@scripts/validate.sh
+
+validate-cluster: ## Validate node counts, etcd and taints
+	@scripts/validate.sh cluster
