@@ -17,5 +17,7 @@ need docker  "https://docs.docker.com/get-docker"
 need kind    "brew install kind"
 need kubectl "brew install kubernetes-cli"
 need helm    "brew install helm"
+need sops    "brew install sops"
+need age     "brew install age"
 
 exit "${MISSING}"

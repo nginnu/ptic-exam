@@ -6,6 +6,21 @@ CONTEXT="kind-ptic-${ENV}-cluster"
 NAMESPACE="argocd"
 CHART_VERSION="${ARGOCD_CHART_VERSION:-10.9.2}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
+AGE_KEY="${AGE_KEY:-${HOME}/.config/sops/age/keys.txt}"
+
+if [ ! -f "${AGE_KEY}" ]; then
+  echo "missing age key at ${AGE_KEY}"
+  echo "create one with: age-keygen -o ${AGE_KEY}"
+  exit 1
+fi
+
+kubectl --context "${CONTEXT}" create namespace "${NAMESPACE}" --dry-run=client -o yaml \
+  | kubectl --context "${CONTEXT}" apply -f -
+
+kubectl --context "${CONTEXT}" -n "${NAMESPACE}" create secret generic sops-age \
+  --from-file=keys.txt="${AGE_KEY}" \
+  --dry-run=client -o yaml \
+  | kubectl --context "${CONTEXT}" apply -f -
 
 helm repo add argo https://argoproj.github.io/argo-helm >/dev/null
 helm repo update argo >/dev/null

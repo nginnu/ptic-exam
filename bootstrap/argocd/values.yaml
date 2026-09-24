@@ -7,6 +7,7 @@ configs:
   cm:
     timeout.reconciliation: 60s
     application.resourceTrackingMethod: annotation
+    kustomize.buildOptions: --enable-alpha-plugins --enable-exec
 
 controller:
   replicas: 1
@@ -34,6 +35,37 @@ repoServer:
       memory: 128Mi
     limits:
       memory: 384Mi
+  env:
+    - name: XDG_CONFIG_HOME
+      value: /.config
+    - name: SOPS_AGE_KEY_FILE
+      value: /.config/sops/age/keys.txt
+  initContainers:
+    - name: install-ksops
+      image: alpine:3.22
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          set -e
+          apk add --no-cache curl
+          curl -sSL https://github.com/viaduct-ai/kustomize-sops/releases/download/v4.5.1/ksops_4.5.1_Linux_x86_64.tar.gz \
+            | tar -xz -C /custom-tools ksops
+          chmod +x /custom-tools/ksops
+      volumeMounts:
+        - name: custom-tools
+          mountPath: /custom-tools
+  volumes:
+    - name: custom-tools
+      emptyDir: {}
+    - name: sops-age
+      secret:
+        secretName: sops-age
+  volumeMounts:
+    - name: custom-tools
+      mountPath: /usr/local/bin/ksops
+      subPath: ksops
+    - name: sops-age
+      mountPath: /.config/sops/age
 
 applicationSet:
   replicas: 1
