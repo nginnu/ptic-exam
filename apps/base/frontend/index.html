@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PTIC Platform</title>
+    <style>
+      :root {
+        --bg: #0b0d12; --panel: #12151d; --line: #1f2430;
+        --text: #e8eaf0; --dim: #8b93a7; --ok: #6ee7a8; --accent: #7aa2f7;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 48px 16px; background: var(--bg); color: var(--text);
+        font-family: system-ui, -apple-system, sans-serif; line-height: 1.5;
+      }
+      .wrap { max-width: 900px; margin: 0 auto; display: grid; gap: 28px; }
+      header { display: flex; gap: 20px; align-items: center; }
+      header img {
+        width: 132px; height: 132px; border-radius: 50%; object-fit: cover;
+        border: 2px solid var(--line);
+      }
+      h1 { margin: 0; font-size: 1.35rem; font-weight: 600; }
+      .role { color: var(--dim); font-size: .9rem; }
+      .src { margin-top: 6px; font-family: ui-monospace, monospace; font-size: .72rem; color: var(--accent); }
+      .src a { color: inherit; }
+      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+      .panel h2 {
+        margin: 0 0 14px; font-size: .75rem; font-weight: 600; letter-spacing: .12em;
+        text-transform: uppercase; color: var(--dim);
+      }
+      ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+      @media (min-width: 620px) { ul { grid-template-columns: 1fr 1fr; gap: 8px 24px; } }
+      li { display: flex; gap: 10px; align-items: baseline; font-size: .92rem; }
+      li::before { content: "\2713"; color: var(--ok); font-weight: 700; }
+      .req { color: var(--dim); font-variant-numeric: tabular-nums; min-width: 1.2em; }
+      pre {
+        margin: 0; padding: 14px; background: #0a0c11; border-radius: 8px;
+        overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: .82rem; color: var(--ok);
+      }
+      .req-line { font-family: ui-monospace, monospace; font-size: .78rem; color: var(--accent); margin-bottom: 10px; }
+      footer { color: var(--dim); font-size: .78rem; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <img src="https://s3-ptic.nginnu.com/public/photo.jpg" alt="">
+        <div>
+          <h1>Nu Panuwat Chaibamrung</h1>
+          <div class="role">PTIC Platform &mdash; GitOps take-home</div>
+          <div class="src">&uarr; this photo is served from <a href="https://s3-ptic.nginnu.com/public/photo.jpg">s3-ptic.nginnu.com/public/photo.jpg</a></div>
+        </div>
+      </header>
+
+      <section class="panel">
+        <h2>Requirements</h2>
+        <ul>
+          <li><span class="req">1</span> PostgreSQL on hostPath</li>
+          <li><span class="req">2</span> Backend API, scalable and HA</li>
+          <li><span class="req">3</span> Frontend, scalable and HA</li>
+          <li><span class="req">4</span> Observability stack</li>
+          <li><span class="req">5</span> Ingress with metrics and access logs</li>
+          <li><span class="req">6</span> In-cluster S3 object storage</li>
+          <li><span class="req">7</span> All ingress through cloudflared</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>Deliverables</h2>
+        <ul>
+          <li>Design document</li>
+          <li>Three environments, base and overlays</li>
+          <li>README with how to validate</li>
+          <li>No raw secrets in git</li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <h2>Live response &mdash; postgrest connectivity check</h2>
+        <div class="req-line">GET /api/probe</div>
+        <pre id="out">loading</pre>
+      </section>
+
+      <footer>photo served from the in-cluster object store &middot; frontend &rarr; backend &rarr; pgbouncer &rarr; postgres</footer>
+    </div>
+
+    <script>
+      fetch('/api/probe')
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          document.getElementById('out').textContent = JSON.stringify(rows, null, 2);
+        })
+        .catch(function () {
+          var el = document.getElementById('out');
+          el.style.color = '#f08a8a';
+          el.textContent = 'api unreachable';
+        });
+    </script>
+  </body>
+</html>

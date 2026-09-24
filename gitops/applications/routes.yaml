@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: routes
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - clusters:
+        selector:
+          matchExpressions:
+            - key: env
+              operator: Exists
+  template:
+    metadata:
+      name: routes-{{.metadata.labels.env}}
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/nginnu/ptic-exam.git
+        targetRevision: main
+        path: platform/routes/overlays/{{.metadata.labels.env}}
+      destination:
+        server: '{{.server}}'
+        namespace: routes
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          limit: 5
+          backoff:
+            duration: 10s
+            maxDuration: 2m
+        syncOptions:
+          - CreateNamespace=true
