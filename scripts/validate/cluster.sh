@@ -9,7 +9,10 @@ worker_count_matches() {
 }
 
 all_nodes_ready() {
-  ! k get nodes --no-headers | grep -qv ' Ready'
+  local nodes
+  nodes="$(k get nodes --no-headers)" || return 1
+  [ -n "${nodes}" ] || return 1
+  ! printf '%s\n' "${nodes}" | grep -qv ' Ready'
 }
 
 etcd_member_count_matches() {
