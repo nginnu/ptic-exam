@@ -17,7 +17,7 @@ What exists in this repository and why. Each section reflects the current state,
 
 - [x] Argo CD installed from `bootstrap/` with the upstream Helm chart, then managed from this repository by its own Application. Helm rather than the plain install manifest so resource requests stay small and unused components are switched off.
 - [x] `gitops/root-app.yaml`: the one Application applied by hand. It watches `gitops/applications`, so every later component arrives by committing a file.
-- [x] hostPath storage: `local-path-provisioner` at sync wave -2, StorageClass `hostpath` on `/var/lib/ptic/volumes`. PVCs name the class rather than relying on the default.
+- [x] hostPath storage: `local-path-provisioner` at sync wave -2, StorageClass `hostpath` on `/var/lib/ptic/volumes`. It replaces the one kind installs, which is deleted by hand once — a cluster built by kubeadm or RKE2 never has it. PVCs name the class rather than relying on the default, so adding a second class later moves nothing.
 - [x] Base and per-environment overlays: `apps/base` shared, `apps/overlays/{dev,staging,prod}` per environment. The cluster is labelled with its environment at install time, and an ApplicationSet turns that label into the overlay it renders.
 - [x] SOPS secret encryption: an age key held outside the repository, a `.sops.yaml` path rule, and ksops installed into the repo server by an initContainer. Argo CD decrypts at render time, so no plaintext secret is committed.
 - [x] `make build`: renders every overlay without a cluster, so the repository can be checked from a fresh clone.
@@ -57,3 +57,7 @@ What exists in this repository and why. Each section reflects the current state,
 
 - [x] Install guide: `docs/install.md`, from an empty machine to a validated cluster.
 - [x] Known limitations recorded in the README.
+
+---
+
+This repository is aimed at the GitOps structure and the tunnel model. Other areas are covered at the level the task needed rather than in full depth — happy to go into any of them.

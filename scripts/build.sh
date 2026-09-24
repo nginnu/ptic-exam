@@ -6,10 +6,10 @@ FAILED=0
 
 for overlay in "${ROOT}"/apps/overlays/*/; do
   name="$(basename "${overlay}")"
-  if kubectl kustomize "${overlay}" >/dev/null 2>&1; then
-    printf 'ok    %s overlay builds\n' "${name}"
+  if kustomize build --enable-alpha-plugins --enable-exec "${overlay}" >/dev/null 2>&1; then
+    printf 'ok    %s overlay renders\n' "${name}"
   else
-    printf 'FAIL  %s overlay builds\n' "${name}"
+    printf 'FAIL  %s overlay renders\n' "${name}"
     FAILED=1
   fi
 done

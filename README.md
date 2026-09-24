@@ -26,13 +26,13 @@ GitOps repository for a bare-metal Kubernetes homelab running three environments
 | `apps/overlays/` | Per-environment overlays for `dev`, `staging` and `prod` |
 | `docs/` | Design document and build notes |
 
-## Validate without a cluster
+## Render the manifests
 
 ```
 make build
 ```
 
-Renders every environment from a fresh clone. It needs `kustomize` and nothing else.
+Renders every environment without a cluster. It needs `kustomize`, `ksops` and an age key that can decrypt the files in this repository, so follow the secrets step in [docs/install.md](docs/install.md) first.
 
 ## Install
 
@@ -52,7 +52,7 @@ Renders every environment from a fresh clone. It needs `kustomize` and nothing e
 
 | Topic | What it proves |
 | --- | --- |
-| `manifests` | Every overlay builds |
+| `manifests` | Every overlay renders, secrets included |
 | `cluster` | Node counts, etcd members and taints match the environment's config |
 | `gitops` | Argo CD healthy, every Application synced, no Service exposed outside the cluster |
 | `storage` | An object written to the store and read back unchanged |
@@ -102,14 +102,14 @@ Every address below is served through the Cloudflare tunnel. The cluster has no 
 
 ![Cluster nodes](docs/images/cluster-node.png)
 
-## Known limitations
+## Documents
 
-- The encrypted files here were sealed with the author's age key. Re-encrypt them with your own before installing.
-- Only production was installed and validated end to end. `dev` and `staging` are proven by `make build`.
-- `metrics-server` runs with `--kubelet-insecure-tls`, which kind requires. On real hardware, enable kubelet certificate rotation and drop the flag.
-- hostPath has no snapshots and no replication. The recovery path is the backup, and the restore is what needs testing.
-- The applications run in the mesh. The database and the object store do not, so their traffic is not mTLS.
+| Document | What is in it |
+| --- | --- |
+| [docs/design.md](docs/design.md) | Goals, topology, repository layout, promotion, secrets, hostPath risks, the tunnel model and the observability paths |
+| [docs/install.md](docs/install.md) | From an empty machine to a validated cluster, step by step |
+| [docs/PROGRESS.md](docs/PROGRESS.md) | What exists in this repository and why, phase by phase |
 
-## Design document
+---
 
-See [docs/design.md](docs/design.md).
+This repository is aimed at the GitOps structure and the tunnel model. Other areas are covered at the level the task needed rather than in full depth — happy to go into any of them.

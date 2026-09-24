@@ -117,6 +117,7 @@
 | hostPath is a directory on one node | A pod with that volume stays Pending if its node is down |
 | The node's disk is a single point of failure | No snapshots, no replication underneath |
 | Volumes come from the `hostpath` class | Named explicitly, so adding a second class later moves nothing |
+| local-path-provisioner handles ordinary volumes | It runs the same on kubeadm and RKE2, so nothing here is tied to kind |
 | Backups, not volumes, are the recovery path | And the restore is what gets tested |
 
 ## Network
@@ -191,3 +192,26 @@
 | Grafana reads all three | One place to correlate a metric, a log line and a trace |
 | Kiali reads the mesh metrics | The service graph and mTLS status come from data already collected |
 | Losing this stack does not take the platform down | It watches the system; it is not in the request path |
+
+## Not here
+
+This repository is aimed at the GitOps structure and the tunnel model. Other areas are covered at the level the task needed rather than in full depth — happy to go into any of them.
+
+| Area | Left out |
+| --- | --- |
+| Network | CNI choice and NetworkPolicy |
+| Storage | Replicated block storage; a volume stays on the node that wrote it |
+| Security | Admission policy, Pod Security Standards, image signing |
+| TLS | cert-manager |
+| Delivery | CI/CD pipeline and progressive delivery |
+| Scaling | Node autoscaling and workload autoscaling on custom metrics |
+| Recovery | Restore drill, etcd backup, cluster upgrades |
+| Operations | Alerting and on-call routing |
+
+| Known limitation | |
+| --- | --- |
+| The encrypted files here were sealed with the author's age key | Re-encrypt them with your own before installing |
+| Only production was installed and validated end to end | `dev` and `staging` are proven by rendering their overlays, not by running them |
+| `metrics-server` runs with `--kubelet-insecure-tls` | kind requires it; on real hardware, enable kubelet certificate rotation and drop the flag |
+| hostPath has no snapshots and no replication | The recovery path is the backup, and the restore is what needs testing |
+| The applications run in the mesh, the database and object store do not | Their traffic is not mTLS |

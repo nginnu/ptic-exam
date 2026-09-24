@@ -41,7 +41,7 @@ kubectl -n local-path-storage delete serviceaccount local-path-provisioner-servi
 kubectl delete storageclass standard
 ```
 
-Real hardware has neither, so this step is for kind only.
+Real hardware has neither, so this step is for kind only. `cluster/` describes the topology with kind so it can be reproduced on a laptop; on real hardware the same shape is built with kubeadm or RKE2, and nothing above that layer changes.
 
 ## 5. Argo CD
 
@@ -72,3 +72,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.pas
 ```
 make delete-cluster ENV=prod
 ```
+
+---
+
+This repository is aimed at the GitOps structure and the tunnel model. Other areas are covered at the level the task needed rather than in full depth — happy to go into any of them.
