@@ -1,0 +1,10 @@
+.DS_Store
+*.swp
+*.tmp
+.idea/
+.vscode/
+kubeconfig
+*.kubeconfig
+*.decrypted.yaml
+age.key
+*.agekey
