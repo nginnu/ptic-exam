@@ -33,9 +33,11 @@ What exists in this repository and why. Each section reflects the current state,
 
 ## Phase 4 — Data
 
-- [ ] Object storage
-- [ ] PostgreSQL
-- [ ] Backups
+- [x] Object storage: RustFS as a StatefulSet claiming a `hostpath` volume, reached over a headless Service. S3-compatible and in-cluster, so backups never leave the premises and no public endpoint is needed.
+- [x] PostgreSQL through CloudNativePG: one instance in dev, two in staging and production, spread across nodes by anti-affinity, with pgbouncer in front through a Pooler.
+- [x] Continuous backup and WAL archiving into the object store, with a daily scheduled backup and a seven-day retention policy.
+- [x] Credentials for both are generated per install and encrypted with SOPS; ksops renders them at sync time, so the repository holds ciphertext only.
+- [x] Validation: an object written and read back, the database accepting a write, the replica following the primary, and a WAL segment landing in the object store after a forced switch.
 
 ## Phase 5 — Applications
 

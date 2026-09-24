@@ -144,3 +144,22 @@
 | `PeerAuthentication: STRICT` | Traffic between workloads in the mesh is mTLS or it is refused |
 | Default-deny `AuthorizationPolicy` | Only the paths opened on purpose work |
 | Cost | One proxy per workload, one more component to upgrade |
+
+## Data
+
+| Decision | Why |
+| --- | --- |
+| CloudNativePG runs Postgres | Failover, backup, WAL archiving and minor upgrades are fields in a custom resource |
+| Primary and replica spread across nodes | One node going down does not take both |
+| pgbouncer in front through a Pooler | The application scales without the connection count reaching the database |
+| Continuous backup and WAL archiving to the in-cluster object store | Nothing leaves the premises and no public endpoint is needed |
+| Read replicas scale by changing `spec.instances` | Writes stay on one primary |
+| CNPG exposes no scale subresource | An HPA cannot drive it; a controller or KEDA would |
+
+## Object storage
+
+| Decision | Why |
+| --- | --- |
+| In-cluster and S3-compatible | No public IP, and the data never leaves the premises |
+| RustFS rather than MinIO | Apache-2.0, after MinIO moved console features behind a commercial licence |
+| It inherits the same hostPath limits | The recovery path is the backup, not the volume |
