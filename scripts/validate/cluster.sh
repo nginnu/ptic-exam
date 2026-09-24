@@ -10,8 +10,7 @@ worker_count_matches() {
 
 all_nodes_ready() {
   local nodes
-  nodes="$(k get nodes --no-headers)" || return 1
-  [ -n "${nodes}" ] || return 1
+  nodes="$(nonempty k get nodes --no-headers)" || return 1
   ! printf '%s\n' "${nodes}" | grep -qv ' Ready'
 }
 

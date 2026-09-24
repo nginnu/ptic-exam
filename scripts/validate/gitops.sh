@@ -1,7 +1,7 @@
 argocd_pods_running() {
-  local unhealthy
-  unhealthy="$(k -n argocd get pods --no-headers | grep -v ' Running ' | grep -cv ' Completed ')"
-  [ "${unhealthy}" = "0" ]
+  local pods
+  pods="$(nonempty k -n argocd get pods --no-headers)" || return 1
+  [ "$(printf '%s\n' "${pods}" | grep -v ' Running ' | grep -cv ' Completed ')" = "0" ]
 }
 
 cluster_is_registered_for_this_env() {
@@ -17,7 +17,9 @@ root_application_is_healthy() {
 }
 
 every_application_is_synced() {
-  ! k -n argocd get applications --no-headers | grep -qv 'Synced *Healthy'
+  local apps
+  apps="$(nonempty k -n argocd get applications --no-headers)" || return 1
+  ! printf '%s\n' "${apps}" | grep -qv 'Synced *Healthy'
 }
 
 no_service_is_externally_exposed() {

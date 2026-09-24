@@ -23,3 +23,10 @@ k() {
 nodes_in_config() {
   grep -c "role: $1" "${CONFIG}"
 }
+
+nonempty() {
+  local out
+  out="$("$@")" || return 1
+  [ -n "${out}" ] || return 1
+  printf '%s\n' "${out}"
+}
