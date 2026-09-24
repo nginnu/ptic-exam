@@ -112,4 +112,4 @@ Every address below is served through the Cloudflare tunnel. The cluster has no 
 
 ---
 
-This repository is aimed at the GitOps structure and the tunnel model. Other areas are covered at the level the task needed rather than in full depth — happy to go into any of them.
+The focus here is the GitOps structure and the tunnel that makes it work on bare metal. Other areas go only as deep as that needed — happy to go into any of them.
